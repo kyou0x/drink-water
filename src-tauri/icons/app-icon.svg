@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16212E"/>
+      <stop offset="1" stop-color="#0B1119"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6CC0F2"/>
+      <stop offset="1" stop-color="#2A6FC6"/>
+    </linearGradient>
+    <clipPath id="inside">
+      <path d="M440 300 L440 352 C440 400 300 420 300 500 L300 800 Q300 870 370 870 L654 870 Q724 870 724 800 L724 500 C724 420 584 400 584 352 L584 300 Z"/>
+    </clipPath>
+  </defs>
+  <rect x="32" y="32" width="960" height="960" rx="224" fill="url(#bg)"/>
+  <g clip-path="url(#inside)">
+    <path d="M250 590 C 340 555, 420 625, 512 590 S 690 555, 780 590 L780 900 L250 900 Z" fill="url(#water)"/>
+  </g>
+  <path d="M440 300 L440 352 C440 400 300 420 300 500 L300 800 Q300 870 370 870 L654 870 Q724 870 724 800 L724 500 C724 420 584 400 584 352 L584 300 Z"
+        fill="none" stroke="#9AD2F7" stroke-width="40" stroke-linejoin="round"/>
+  <rect x="418" y="180" width="188" height="104" rx="26" fill="#9AD2F7"/>
+</svg>
