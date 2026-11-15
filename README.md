@@ -24,12 +24,6 @@ Log every glass in one click, watch the bottle fill up, and keep your history: n
     <td align="center"><img src="docs/screenshots/goal-reached.png" width="230" alt="Full bottle after reaching the daily goal" /></td>
     <td align="center"><img src="docs/screenshots/history.png" width="230" alt="History tab with stats and chart" /></td>
   </tr>
-  <tr>
-    <td align="center"><sub><b>Start of the day</b>: empty bottle</sub></td>
-    <td align="center"><sub><b>Logging</b>: water rises, with an undo toast</sub></td>
-    <td align="center"><sub><b>Goal reached</b>: full bottle, surplus counted</sub></td>
-    <td align="center"><sub><b>History</b>: stats, chart and entries</sub></td>
-  </tr>
 </table>
 
 ## Getting started
