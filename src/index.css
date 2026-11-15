@@ -1,0 +1,141 @@
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --color-bg: #0b0f14;
+  --color-surface: #141a22;
+  --color-surface-2: #1a222c;
+  --color-surface-3: #212b37;
+  --color-line: rgb(255 255 255 / 0.06);
+  --color-fg: #e8eef4;
+  --color-muted: #8a97a6;
+  --color-subtle: #5c6878;
+  --color-accent: #5ab0ea;
+  --color-accent-strong: #3b8fd8;
+  --color-danger: #f07878;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    user-select: none;
+    cursor: default;
+  }
+  input {
+    user-select: text;
+  }
+  button {
+    cursor: default;
+  }
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, transparent);
+    outline-offset: 2px;
+  }
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6);
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.08);
+    border-radius: 3px;
+  }
+}
+
+@keyframes wave {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100px);
+  }
+}
+
+@keyframes celebrate {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgb(90 176 234 / 0));
+  }
+  40% {
+    filter: drop-shadow(0 0 18px rgb(90 176 234 / 0.55));
+  }
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-190px);
+    opacity: 0;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    transform: translate(-50%, 8px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wave-front {
+  animation: wave 3.2s linear infinite;
+}
+.wave-back {
+  animation: wave 5.5s linear infinite reverse;
+}
+.celebrate {
+  animation: celebrate 1.2s ease-in-out 2;
+}
+.bubble {
+  animation: rise 2.2s ease-out forwards;
+}
+.toast {
+  animation: toast-in 220ms var(--ease-out-expo);
+}
+.view {
+  animation: fade-in 260ms var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
