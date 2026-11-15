@@ -1,0 +1,44 @@
+name: Release
+
+# Push a version tag (e.g. `git tag v1.0.1 && git push origin v1.0.1`) to build the
+# Windows installer and publish it as a GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Aqua ${{ github.ref_name }}
+          releaseDraft: false
+          prerelease: false
+          args: --bundles nsis
+          releaseBody: |
+            ## Download
+
+            Download **`Aqua_*_x64-setup.exe`** below and run it. It installs per user, so no admin rights are needed.
+
+            > The installer is not code-signed yet, so Windows SmartScreen may show "Windows protected your PC".
+            > Click **More info → Run anyway**. You can review the source and the build log of this release in GitHub Actions.
+
+            Requires Windows 10/11 (WebView2 is already included).
