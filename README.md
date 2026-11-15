@@ -43,20 +43,20 @@ See the [Tauri prerequisites guide](https://tauri.app/start/prerequisites/) for 
 git clone https://github.com/kyou0x/drink-water.git
 cd drink-water
 npm install
-npm run tauri dev       # starts Vite + the desktop app with hot reload
+npm run tauri dev       
 ```
 
 ### Quality checks
 
 ```bash
-npm run lint            # ESLint
-npm run typecheck       # TypeScript
-npm test                # Vitest: math, validation, edit/delete, rollover, over-goal
+npm run lint           
+npm run typecheck       
+npm test                
 
 cd src-tauri
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
-cargo test              # SQLite storage, settings, reminder scheduling
+cargo test              
 ```
 
 ### Build the installer
