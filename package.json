@@ -1,7 +1,7 @@
 {
   "name": "aqua",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Minimal, offline desktop water tracker for Windows (Tauri 2 + React).",
   "license": "MIT",
   "repository": {
