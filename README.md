@@ -89,6 +89,14 @@ Output goes to `src-tauri/target/x86_64-pc-windows-msvc/release/`. On WSL you ca
 
 </details>
 
+## Languages
+
+Aqua follows your Windows language automatically, and you can switch it in **Settings → Language**. The installer, tray menu and reminders are translated too.
+
+English · Português (Brasil) · Español · Français · Deutsch · Italiano · Nederlands · Polski · Русский · Українська · Türkçe · Bahasa Indonesia · हिन्दी · 日本語 · 한국어 · 简体中文
+
+To add or fix a translation, edit the files in [`src/i18n/locales`](src/i18n/locales) (`en.ts` is the reference) and the tray/notification strings in [`src-tauri/src/i18n.rs`](src-tauri/src/i18n.rs). The tests fail if any key is missing.
+
 ## Where is my data?
 
 ```
