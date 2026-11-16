@@ -32,14 +32,38 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "publisher": "Aqua",
-    "shortDescription": "Monitor de hidratação",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "shortDescription": "Desktop water tracker",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["PortugueseBR"],
+        "languages": [
+          "English",
+          "PortugueseBR",
+          "Spanish",
+          "French",
+          "German",
+          "Italian",
+          "Dutch",
+          "Polish",
+          "Russian",
+          "Ukrainian",
+          "Turkish",
+          "Indonesian",
+          "Hindi",
+          "Japanese",
+          "Korean",
+          "SimpChinese"
+        ],
         "installerIcon": "icons/icon.ico"
       }
     }
