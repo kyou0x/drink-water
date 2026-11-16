@@ -105,14 +105,14 @@ impl Db {
         now: DateTime<Local>,
     ) -> Result<Entry, String> {
         let amount_ml = validate_amount(amount_ml)?;
-        let entry = self.get_entry(id)?.ok_or("Registro não encontrado.")?;
+        let entry = self.get_entry(id)?.ok_or("entry_not_found")?;
         let date: NaiveDate = parse_day(&entry.day)?;
         let local = Local
             .from_local_datetime(&date.and_time(time))
             .earliest()
-            .ok_or("Horário inexistente neste dia (horário de verão).")?;
+            .ok_or("nonexistent_time")?;
         if local > now {
-            return Err("O horário não pode estar no futuro.".into());
+            return Err("future_time".into());
         }
         let ts = local.timestamp_millis();
         self.conn
@@ -130,7 +130,7 @@ impl Db {
             .execute("DELETE FROM entries WHERE id = ?1", [id])
             .map_err(db_err)?;
         if n == 0 {
-            return Err("Registro não encontrado.".into());
+            return Err("entry_not_found".into());
         }
         Ok(())
     }

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::i18n;
+
 pub const MIN_ENTRY_ML: i64 = 1;
 pub const MAX_ENTRY_ML: i64 = 5000;
 pub const MIN_GOAL_ML: i64 = 250;
@@ -42,6 +44,8 @@ pub struct Settings {
     pub reminder_end: String,
     pub autostart: bool,
     pub close_behavior: CloseBehavior,
+    /// UI language code (see `i18n::LOCALES`) or "auto" to follow the OS.
+    pub language: String,
 }
 
 impl Default for Settings {
@@ -55,52 +59,56 @@ impl Default for Settings {
             reminder_end: "22:00".into(),
             autostart: false,
             close_behavior: CloseBehavior::Tray,
+            language: "auto".into(),
         }
     }
 }
 
 pub fn validate_amount(ml: i64) -> Result<i64, String> {
     if ml < MIN_ENTRY_ML {
-        return Err("A quantidade deve ser maior que zero.".into());
+        return Err("amount_too_small".into());
     }
     if ml > MAX_ENTRY_ML {
-        return Err(format!("Máximo de {MAX_ENTRY_ML} ml por registro."));
+        return Err("amount_too_large".into());
     }
     Ok(ml)
 }
 
 pub fn parse_time(value: &str) -> Result<chrono::NaiveTime, String> {
     if value.len() != 5 {
-        return Err("Horário inválido (use HH:MM).".into());
+        return Err("invalid_time".into());
     }
-    chrono::NaiveTime::parse_from_str(value, "%H:%M").map_err(|_| "Horário inválido (use HH:MM).".into())
+    chrono::NaiveTime::parse_from_str(value, "%H:%M").map_err(|_| "invalid_time".into())
 }
 
 pub fn parse_day(value: &str) -> Result<chrono::NaiveDate, String> {
     if value.len() != 10 {
-        return Err("Data inválida.".into());
+        return Err("invalid_date".into());
     }
-    chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").map_err(|_| "Data inválida.".into())
+    chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").map_err(|_| "invalid_date".into())
 }
 
 impl Settings {
     pub fn validate(&self) -> Result<(), String> {
         if !(MIN_GOAL_ML..=MAX_GOAL_ML).contains(&self.goal_ml) {
-            return Err(format!("A meta deve ficar entre {MIN_GOAL_ML} e {MAX_GOAL_ML} ml."));
+            return Err("invalid_goal".into());
         }
         if self.quick_amounts.len() != 4 {
-            return Err("Defina 4 botões rápidos.".into());
+            return Err("invalid_quick_amounts".into());
         }
         for &q in &self.quick_amounts {
-            validate_amount(q).map_err(|e| format!("Botão rápido: {e}"))?;
+            validate_amount(q)?;
         }
         if !REMINDER_INTERVALS.contains(&self.reminder_interval_min) {
-            return Err("Intervalo de lembrete inválido.".into());
+            return Err("invalid_interval".into());
         }
         let start = parse_time(&self.reminder_start)?;
         let end = parse_time(&self.reminder_end)?;
         if start == end {
-            return Err("Início e término dos lembretes não podem ser iguais.".into());
+            return Err("same_reminder_times".into());
+        }
+        if !i18n::is_language_pref(&self.language) {
+            return Err("invalid_language".into());
         }
         Ok(())
     }
@@ -146,6 +154,18 @@ mod tests {
         }
         .validate()
         .is_err());
+        assert!(Settings {
+            language: "xx".into(),
+            ..Default::default()
+        }
+        .validate()
+        .is_err());
+        assert!(Settings {
+            language: "ja".into(),
+            ..Default::default()
+        }
+        .validate()
+        .is_ok());
     }
 
     #[test]
@@ -153,5 +173,6 @@ mod tests {
         let s: Settings = serde_json::from_str(r#"{"goalMl": 3000}"#).unwrap();
         assert_eq!(s.goal_ml, 3000);
         assert_eq!(s.quick_amounts, vec![150, 250, 350, 500]);
+        assert_eq!(s.language, "auto");
     }
 }

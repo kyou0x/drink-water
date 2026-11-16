@@ -1,4 +1,5 @@
 mod db;
+mod i18n;
 mod model;
 mod reminder;
 
@@ -8,6 +9,7 @@ use std::time::Duration as StdDuration;
 use chrono::{DateTime, Local};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::Wry;
 use tauri::{AppHandle, Manager, State, WindowEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as AutostartExt};
 use tauri_plugin_notification::{NotificationExt, PermissionState};
@@ -17,6 +19,7 @@ use model::{parse_time, CloseBehavior, DailyTotal, Entry, Settings};
 
 const MAIN_WINDOW: &str = "main";
 const AUTOSTART_FLAG: &str = "--minimized";
+const TRAY_ID: &str = "aqua-tray";
 
 struct AppState {
     db: Mutex<Db>,
@@ -26,7 +29,7 @@ struct AppState {
 
 impl AppState {
     fn db(&self) -> Result<MutexGuard<'_, Db>, String> {
-        self.db.lock().map_err(|_| "Banco de dados indisponível.".to_string())
+        self.db.lock().map_err(|_| "db_unavailable".to_string())
     }
 }
 
@@ -54,7 +57,7 @@ fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Settings)
         } else {
             autolaunch.disable()
         };
-        res.map_err(|e| format!("Não foi possível alterar a inicialização com o Windows: {e}"))?;
+        res.map_err(|e| format!("autostart_failed: {e}"))?;
     }
     if settings.reminders_enabled {
         let notifications = app.notification();
@@ -63,6 +66,11 @@ fn save_settings(app: AppHandle, state: State<'_, AppState>, settings: Settings)
         }
     }
     state.db()?.save_settings(&settings)?;
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        if let Ok(menu) = tray_menu(&app, &settings.language) {
+            let _ = tray.set_menu(Some(menu));
+        }
+    }
     Ok(settings)
 }
 
@@ -102,12 +110,17 @@ fn show_main(app: &AppHandle) {
     }
 }
 
-fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Abrir Aqua", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &quit])?;
+fn tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<Wry>> {
+    let text = i18n::strings(language);
+    let open = MenuItem::with_id(app, "open", text.open, true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", text.quit, true, None::<&str>)?;
+    Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &quit])
+}
 
-    let mut builder = TrayIconBuilder::with_id("aqua-tray")
+fn setup_tray(app: &AppHandle, language: &str) -> tauri::Result<()> {
+    let menu = tray_menu(app, language)?;
+
+    let mut builder = TrayIconBuilder::with_id(TRAY_ID)
         .tooltip("Aqua")
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -163,7 +176,7 @@ fn reminder_tick(app: &AppHandle) -> Result<(), String> {
             notifications
                 .builder()
                 .title("Aqua")
-                .body("Hora de beber água 💧")
+                .body(i18n::strings(&settings.language).reminder)
                 .show()
                 .map_err(|e| e.to_string())?;
         }
@@ -198,13 +211,14 @@ pub fn run() {
             let dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&dir)?;
             let db = Db::open(&dir.join("aqua.db"))?;
+            let language = db.get_settings().map(|s| s.language).unwrap_or_default();
             app.manage(AppState {
                 db: Mutex::new(db),
                 started_at: Local::now(),
                 last_reminder: Mutex::new(None),
             });
 
-            setup_tray(app.handle())?;
+            setup_tray(app.handle(), &language)?;
             spawn_reminders(app.handle().clone());
 
             // Launched by Windows at login: stay quietly in the tray.
