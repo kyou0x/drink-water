@@ -4,7 +4,7 @@ import { HistoryView } from "./components/HistoryView";
 import { SettingsView } from "./components/SettingsView";
 import { TitleBar } from "./components/TitleBar";
 import { TodayView } from "./components/TodayView";
-import { aquaStore, useAqua } from "./state";
+import { aquaStore, useAqua, useT } from "./state";
 
 type Tab = "today" | "history" | "settings";
 
@@ -12,6 +12,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("today");
   const status = useAqua((s) => s.status);
   const loadError = useAqua((s) => s.loadError);
+  const m = useT();
 
   useEffect(() => {
     void aquaStore.getState().init();
@@ -53,14 +54,14 @@ export default function App() {
         {status === "error" && (
           <div className="grid h-full place-items-center px-8 text-center text-sm text-muted">
             <div>
-              <p className="font-medium text-fg">Não foi possível carregar seus dados.</p>
+              <p className="font-medium text-fg">{m.load.error}</p>
               <p className="mt-1 text-xs text-danger">{loadError}</p>
               <button
                 type="button"
                 onClick={() => void aquaStore.getState().init()}
                 className="mt-4 rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-fg hover:bg-surface-3"
               >
-                Tentar novamente
+                {m.load.retry}
               </button>
             </div>
           </div>
@@ -75,9 +76,9 @@ export default function App() {
       </main>
       <ToastHost />
       <nav className="flex h-14 shrink-0 border-t border-line px-2">
-        <TabButton active={tab === "today"} onClick={() => setTab("today")} icon={<House />} label="Hoje" />
-        <TabButton active={tab === "history"} onClick={() => setTab("history")} icon={<ChartColumn />} label="Histórico" />
-        <TabButton active={tab === "settings"} onClick={() => setTab("settings")} icon={<SlidersHorizontal />} label="Ajustes" />
+        <TabButton active={tab === "today"} onClick={() => setTab("today")} icon={<House />} label={m.tabs.today} />
+        <TabButton active={tab === "history"} onClick={() => setTab("history")} icon={<ChartColumn />} label={m.tabs.history} />
+        <TabButton active={tab === "settings"} onClick={() => setTab("settings")} icon={<SlidersHorizontal />} label={m.tabs.settings} />
       </nav>
     </div>
   );
@@ -101,6 +102,7 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
 
 function ToastHost() {
   const toast = useAqua((s) => s.toast);
+  const m = useT();
 
   useEffect(() => {
     if (!toast) return;
@@ -124,7 +126,7 @@ function ToastHost() {
           onClick={() => void aquaStore.getState().undoLast()}
           className="font-semibold text-accent hover:brightness-125"
         >
-          Desfazer
+          {m.toast.undo}
         </button>
       )}
     </div>

@@ -2,13 +2,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Droplet, Minus, Undo2, X } from "lucide-react";
 import { formatLongDate } from "../lib/format";
 import { parseDayKey } from "../lib/date";
-import { aquaStore, useAqua } from "../state";
+import { aquaStore, useAqua, useT } from "../state";
 
 const win = () => getCurrentWindow();
 
 export function TitleBar() {
   const today = useAqua((s) => s.today);
   const canUndo = useAqua((s) => s.todayEntries.length > 0);
+  const m = useT();
 
   return (
     <header data-tauri-drag-region className="flex h-12 shrink-0 items-center gap-1 pr-2 pl-4">
@@ -20,19 +21,19 @@ export function TitleBar() {
       </div>
 
       <span data-tauri-drag-region title={formatLongDate(parseDayKey(today))} className="mr-1 text-xs text-muted">
-        Hoje
+        {m.titleBar.today}
       </span>
       <TitleButton
-        label="Desfazer último registro (Ctrl+Z)"
+        label={m.titleBar.undo}
         disabled={!canUndo}
         onClick={() => void aquaStore.getState().undoLast()}
       >
         <Undo2 className="size-[15px]" />
       </TitleButton>
-      <TitleButton label="Minimizar" onClick={() => void win().minimize()}>
+      <TitleButton label={m.titleBar.minimize} onClick={() => void win().minimize()}>
         <Minus className="size-[15px]" />
       </TitleButton>
-      <TitleButton label="Fechar" danger onClick={() => void win().close()}>
+      <TitleButton label={m.titleBar.close} danger onClick={() => void win().close()}>
         <X className="size-[15px]" />
       </TitleButton>
     </header>

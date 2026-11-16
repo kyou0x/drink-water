@@ -1,8 +1,10 @@
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Settings } from "../lib/types";
+import { LOCALES, type LanguagePref } from "../i18n";
+import { formatMl } from "../lib/format";
+import { DEFAULT_SETTINGS, type Settings } from "../lib/types";
 import { REMINDER_INTERVALS } from "../lib/validation";
-import { aquaStore, useAqua } from "../state";
+import { aquaStore, useAqua, useT } from "../state";
 import { inputClass, Section, Segmented, Switch } from "./ui";
 
 /** Numeric fields are edited as text so partial input ("", "4") doesn't fight the user. */
@@ -28,6 +30,8 @@ export function SettingsView() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const m = useT();
+  const ms = m.settings;
 
   useEffect(() => {
     if (!saved) return;
@@ -58,25 +62,43 @@ export function SettingsView() {
   return (
     <div className="view flex h-full flex-col">
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pt-1 pb-4">
-        <Section title="Meta diária">
+        <Section title={ms.language}>
+          <div className="relative">
+            <select
+              value={draft.language}
+              onChange={(e) => set("language", e.target.value as LanguagePref)}
+              aria-label={ms.language}
+              className={`${inputClass} appearance-none pr-9 [color-scheme:dark]`}
+            >
+              <option value="auto">{ms.languageAuto}</option>
+              {LOCALES.map((l) => (
+                <option key={l.code} value={l.code} lang={l.code}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-subtle" />
+          </div>
+        </Section>
+
+        <Section title={ms.goal}>
           <div className="relative">
             <input
               value={draft.goalMl}
               onChange={(e) => set("goalMl", e.target.value)}
               inputMode="numeric"
               maxLength={6}
-              aria-label="Meta diária em ml"
+              aria-label={ms.goalAria}
               className={`${inputClass} pr-10`}
             />
-            <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs text-subtle">ml</span>
+            <span className="absolute top-1/2 right-3 -translate-y-1/2 text-xs text-subtle">{m.ml}</span>
           </div>
           <p className="text-[11px] leading-relaxed text-subtle">
-            O valor padrão de 4.500 ml é apenas um ponto de partida, não uma recomendação médica. A necessidade de
-            água varia de pessoa para pessoa.
+            {ms.disclaimer(formatMl(DEFAULT_SETTINGS.goalMl))}
           </p>
         </Section>
 
-        <Section title="Botões rápidos (ml)">
+        <Section title={ms.quick}>
           <div className="grid grid-cols-4 gap-2">
             {draft.quickAmounts.map((v, i) => (
               <input
@@ -84,7 +106,7 @@ export function SettingsView() {
                 value={v}
                 inputMode="numeric"
                 maxLength={4}
-                aria-label={`Botão rápido ${i + 1}`}
+                aria-label={ms.quickAria(i + 1)}
                 onChange={(e) => {
                   const next = [...draft.quickAmounts];
                   next[i] = e.target.value;
@@ -96,22 +118,22 @@ export function SettingsView() {
           </div>
         </Section>
 
-        <Section title="Lembretes">
-          <Row label="Ativar lembretes" hint="Não são enviados após atingir a meta do dia.">
-            <Switch label="Ativar lembretes" checked={draft.remindersEnabled} onChange={(v) => set("remindersEnabled", v)} />
+        <Section title={ms.reminders}>
+          <Row label={ms.enableReminders} hint={ms.remindersHint}>
+            <Switch label={ms.enableReminders} checked={draft.remindersEnabled} onChange={(v) => set("remindersEnabled", v)} />
           </Row>
           <div className="space-y-1.5">
-            <span className={`text-xs text-muted ${remindersOff ? "opacity-40" : ""}`}>Intervalo</span>
+            <span className={`text-xs text-muted ${remindersOff ? "opacity-40" : ""}`}>{ms.interval}</span>
             <Segmented
               disabled={remindersOff}
               value={draft.reminderIntervalMin}
               onChange={(v) => set("reminderIntervalMin", v)}
-              options={REMINDER_INTERVALS.map((m) => ({ value: m, label: `${m} min` }))}
+              options={REMINDER_INTERVALS.map((n) => ({ value: n, label: ms.minutes(n) }))}
             />
           </div>
           <div className={`grid grid-cols-2 gap-2 ${remindersOff ? "opacity-40" : ""}`}>
             <label className="space-y-1.5">
-              <span className="text-xs text-muted">Início</span>
+              <span className="text-xs text-muted">{ms.start}</span>
               <input
                 type="time"
                 disabled={remindersOff}
@@ -121,7 +143,7 @@ export function SettingsView() {
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-xs text-muted">Término</span>
+              <span className="text-xs text-muted">{ms.end}</span>
               <input
                 type="time"
                 disabled={remindersOff}
@@ -133,18 +155,18 @@ export function SettingsView() {
           </div>
         </Section>
 
-        <Section title="Sistema">
-          <Row label="Iniciar com o Windows" hint="Abre minimizado na bandeja.">
-            <Switch label="Iniciar com o Windows" checked={draft.autostart} onChange={(v) => set("autostart", v)} />
+        <Section title={ms.system}>
+          <Row label={ms.autostart} hint={ms.autostartHint}>
+            <Switch label={ms.autostart} checked={draft.autostart} onChange={(v) => set("autostart", v)} />
           </Row>
           <div className="space-y-1.5">
-            <span className="text-xs text-muted">Ao fechar a janela</span>
+            <span className="text-xs text-muted">{ms.onClose}</span>
             <Segmented
               value={draft.closeBehavior}
               onChange={(v) => set("closeBehavior", v)}
               options={[
-                { value: "tray", label: "Manter na bandeja" },
-                { value: "quit", label: "Encerrar o Aqua" },
+                { value: "tray", label: ms.closeTray },
+                { value: "quit", label: ms.closeQuit },
               ]}
             />
           </div>
@@ -161,10 +183,10 @@ export function SettingsView() {
         >
           {saved && !dirty ? (
             <>
-              <Check className="size-4" /> Salvo
+              <Check className="size-4" /> {ms.saved}
             </>
           ) : (
-            "Salvar alterações"
+            ms.save
           )}
         </button>
       </div>

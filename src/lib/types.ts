@@ -1,3 +1,5 @@
+import type { LanguagePref } from "../i18n";
+
 export interface Entry {
   id: number;
   amountMl: number;
@@ -25,6 +27,8 @@ export interface Settings {
   reminderEnd: string;
   autostart: boolean;
   closeBehavior: CloseBehavior;
+  /** UI language, or "auto" to follow the system. */
+  language: LanguagePref;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -36,4 +40,5 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderEnd: "22:00",
   autostart: false,
   closeBehavior: "tray",
+  language: "auto",
 };

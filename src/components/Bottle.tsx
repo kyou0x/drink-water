@@ -31,9 +31,11 @@ interface Props {
   goalMl: number;
   /** Changes when the goal is crossed; triggers the celebration animation. */
   celebrate: number;
+  /** Accessible description, e.g. "Bottle 42% full". */
+  label: string;
 }
 
-export function Bottle({ fill, goalMl, celebrate }: Props) {
+export function Bottle({ fill, goalMl, celebrate, label }: Props) {
   // Celebrate while the latest token hasn't been marked as finished.
   const [finished, setFinished] = useState(0);
   const celebrating = celebrate > 0 && finished !== celebrate;
@@ -55,7 +57,7 @@ export function Bottle({ fill, goalMl, celebrate }: Props) {
       viewBox="0 0 200 300"
       className={`h-full w-auto overflow-visible ${celebrating ? "celebrate" : ""}`}
       role="img"
-      aria-label={`Garrafa ${Math.round(fill * 100)}% cheia`}
+      aria-label={label}
     >
       <defs>
         <clipPath id="bottle-inside">

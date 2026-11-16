@@ -1,3 +1,5 @@
+import { isLanguagePref, t } from "../i18n";
+import { formatMl } from "./format";
 import type { Settings } from "./types";
 
 export const MIN_ENTRY_ML = 1;
@@ -8,35 +10,34 @@ export const REMINDER_INTERVALS = [30, 45, 60, 90, 120] as const;
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
-/** Parses user-typed amounts such as "420", " 420 ml", "1.000" (pt-BR thousands). */
+/**
+ * Parses user-typed amounts such as "420", " 420 ml", "1.000", "1,000" or "1 000".
+ * Only whole millilitres are accepted, so "." and "," are always thousands separators.
+ */
 export function parseAmount(input: string): Result<number> {
-  const cleaned = input.trim().toLowerCase().replace(/\s*ml$/, "").replace(/\s+/g, "");
-  if (cleaned === "") return { ok: false, error: "Informe uma quantidade." };
-  if (!/^\d{1,3}(\.\d{3})*$|^\d+$/.test(cleaned)) {
-    return { ok: false, error: "Use apenas números inteiros (ml)." };
+  const cleaned = input
+    .trim()
+    .toLowerCase()
+    .replace(/\s*(ml|мл)$/, "")
+    .replace(/\s+/g, "");
+  if (cleaned === "") return { ok: false, error: t().errors.enterAmount };
+  if (!/^\d{1,3}([.,']\d{3})+$|^\d+$/.test(cleaned)) {
+    return { ok: false, error: t().errors.integersOnly };
   }
-  const value = Number(cleaned.replace(/\./g, ""));
-  return validateAmount(value);
+  return validateAmount(Number(cleaned.replace(/[.,']/g, "")));
 }
 
 export function validateAmount(value: number): Result<number> {
-  if (!Number.isFinite(value) || !Number.isInteger(value)) {
-    return { ok: false, error: "Quantidade inválida." };
-  }
-  if (value < MIN_ENTRY_ML) return { ok: false, error: "A quantidade deve ser maior que zero." };
-  if (value > MAX_ENTRY_ML) {
-    return { ok: false, error: `Máximo de ${MAX_ENTRY_ML.toLocaleString("pt-BR")} ml por registro.` };
-  }
+  const e = t().errors;
+  if (!Number.isFinite(value) || !Number.isInteger(value)) return { ok: false, error: e.invalidAmount };
+  if (value < MIN_ENTRY_ML) return { ok: false, error: e.amountPositive };
+  if (value > MAX_ENTRY_ML) return { ok: false, error: e.amountMax(formatMl(MAX_ENTRY_ML)) };
   return { ok: true, value };
 }
 
 export function validateGoal(value: number): Result<number> {
-  if (!Number.isFinite(value) || !Number.isInteger(value)) return { ok: false, error: "Meta inválida." };
-  if (value < MIN_GOAL_ML || value > MAX_GOAL_ML) {
-    return {
-      ok: false,
-      error: `A meta deve ficar entre ${MIN_GOAL_ML.toLocaleString("pt-BR")} e ${MAX_GOAL_ML.toLocaleString("pt-BR")} ml.`,
-    };
+  if (!Number.isInteger(value) || value < MIN_GOAL_ML || value > MAX_GOAL_ML) {
+    return { ok: false, error: t().errors.goalRange(formatMl(MIN_GOAL_ML), formatMl(MAX_GOAL_ML)) };
   }
   return { ok: true, value };
 }
@@ -48,24 +49,20 @@ export function isValidTime(value: string): boolean {
 }
 
 export function validateSettings(s: Settings): Result<Settings> {
+  const e = t().errors;
   const goal = validateGoal(s.goalMl);
   if (!goal.ok) return goal;
-  if (s.quickAmounts.length !== 4) return { ok: false, error: "Defina 4 botões rápidos." };
+  if (s.quickAmounts.length !== 4) return { ok: false, error: e.quickCount };
   for (const q of s.quickAmounts) {
     const r = validateAmount(q);
-    if (!r.ok) return { ok: false, error: `Botão rápido: ${r.error}` };
+    if (!r.ok) return { ok: false, error: e.quickPrefix(r.error) };
   }
   if (!(REMINDER_INTERVALS as readonly number[]).includes(s.reminderIntervalMin)) {
-    return { ok: false, error: "Intervalo de lembrete inválido." };
+    return { ok: false, error: e.invalidInterval };
   }
-  if (!isValidTime(s.reminderStart) || !isValidTime(s.reminderEnd)) {
-    return { ok: false, error: "Horário inválido (use HH:MM)." };
-  }
-  if (s.reminderStart === s.reminderEnd) {
-    return { ok: false, error: "Início e término dos lembretes não podem ser iguais." };
-  }
-  if (s.closeBehavior !== "tray" && s.closeBehavior !== "quit") {
-    return { ok: false, error: "Comportamento ao fechar inválido." };
-  }
+  if (!isValidTime(s.reminderStart) || !isValidTime(s.reminderEnd)) return { ok: false, error: e.invalidTime };
+  if (s.reminderStart === s.reminderEnd) return { ok: false, error: e.sameTimes };
+  if (s.closeBehavior !== "tray" && s.closeBehavior !== "quit") return { ok: false, error: e.invalidClose };
+  if (!isLanguagePref(s.language)) return { ok: false, error: e.invalidLanguage };
   return { ok: true, value: s };
 }

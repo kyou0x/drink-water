@@ -9,12 +9,15 @@ describe("parseAmount", () => {
     ["420 ml", 420],
     ["420ML", 420],
     ["1.000", 1000],
+    ["1,000", 1000],
+    ["1 000", 1000],
+    ["350 мл", 350],
     ["5000", 5000],
   ])("accepts %j", (input, expected) => {
     expect(parseAmount(input)).toEqual({ ok: true, value: expected });
   });
 
-  it.each(["", "  ", "-250", "0", "abc", "12.5", "4,2", "1e3", "5001", "999999999", "NaN", "Infinity", "250; DROP"])(
+  it.each(["", "  ", "-250", "0", "abc", "12.5", "4,2", "1,00", "1e3", "5001", "999999999", "NaN", "Infinity", "250; DROP"])(
     "rejects %j",
     (input) => {
       expect(parseAmount(input).ok).toBe(false);

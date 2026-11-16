@@ -5,13 +5,14 @@ import { formatLongDate, formatMl, formatShortDate, formatWeekday } from "../lib
 import { goalStreak, summarizePeriod } from "../lib/hydration";
 import type { DailyTotal, Entry } from "../lib/types";
 import { isValidTime, parseAmount } from "../lib/validation";
-import { aquaStore, useAqua } from "../state";
+import { aquaStore, useAqua, useT } from "../state";
 import { inputClass, Segmented } from "./ui";
 
 export function HistoryView() {
   const today = useAqua((s) => s.today);
   const totals = useAqua((s) => s.totals);
   const goal = useAqua((s) => s.settings.goalMl);
+  const m = useT();
   const [range, setRange] = useState<7 | 30>(7);
   const [selected, setSelected] = useState(today);
 
@@ -32,16 +33,16 @@ export function HistoryView() {
         value={range}
         onChange={setRange}
         options={[
-          { value: 7, label: "7 dias" },
-          { value: 30, label: "30 dias" },
+          { value: 7, label: m.history.days7 },
+          { value: 30, label: m.history.days30 },
         ]}
       />
 
       <div className="grid grid-cols-2 gap-2">
-        <Stat icon={<Droplet />} label="Hoje" value={`${formatMl(map.get(today) ?? 0)} ml`} />
-        <Stat icon={<TrendingUp />} label="Média diária" value={`${formatMl(summary.averageMl)} ml`} />
-        <Stat icon={<CalendarCheck />} label="Meta atingida" value={`${summary.daysMet} de ${range} dias`} />
-        <Stat icon={<Flame />} label="Sequência" value={`${streak} ${streak === 1 ? "dia" : "dias"}`} />
+        <Stat icon={<Droplet />} label={m.history.today} value={`${formatMl(map.get(today) ?? 0)} ${m.ml}`} />
+        <Stat icon={<TrendingUp />} label={m.history.average} value={`${formatMl(summary.averageMl)} ${m.ml}`} />
+        <Stat icon={<CalendarCheck />} label={m.history.goalMet} value={m.history.goalMetValue(summary.daysMet, range)} />
+        <Stat icon={<Flame />} label={m.history.streak} value={m.history.streakValue(streak)} />
       </div>
 
       <Chart series={summary.series} goal={goal} selected={selected} today={today} onSelect={setSelected} />
@@ -83,13 +84,14 @@ function Chart({
   const barW = Math.max(3, Math.min(26, slot * 0.62));
   const y = (v: number) => H - (v / max) * H;
   const dense = series.length > 7;
+  const m = useT();
 
   return (
     <div className="rounded-xl border border-line bg-surface px-3 pt-3 pb-2">
-      <svg viewBox={`0 -4 ${W} ${H + 22}`} className="w-full" role="img" aria-label="Consumo diário">
+      <svg viewBox={`0 -4 ${W} ${H + 22}`} className="w-full" role="img" aria-label={m.history.chartAria}>
         <line x1={0} x2={W} y1={y(goal)} y2={y(goal)} stroke="#5ab0ea" strokeOpacity="0.35" strokeDasharray="3 4" />
         <text x={0} y={y(goal) - 4} fontSize="9" fill="#5ab0ea" fillOpacity="0.7">
-          meta
+          {m.history.chartGoal}
         </text>
         {series.map((d, i) => {
           const x = i * slot + (slot - barW) / 2;
@@ -100,7 +102,7 @@ function Chart({
           const showLabel = !dense || i % 5 === (series.length - 1) % 5;
           return (
             <g key={d.day} onClick={() => onSelect(d.day)} className="cursor-pointer">
-              <title>{`${formatShortDate(date)}: ${formatMl(d.totalMl)} ml`}</title>
+              <title>{`${formatShortDate(date)}: ${formatMl(d.totalMl)} ${m.ml}`}</title>
               <rect x={i * slot} y={-4} width={slot} height={H + 22} fill="transparent" />
               <rect
                 x={x}
@@ -137,6 +139,7 @@ function DayEntries({ day, today }: { day: string; today: string }) {
   const revision = useAqua((s) => s.revision);
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
+  const m = useT();
 
   useEffect(() => {
     let alive = true;
@@ -157,13 +160,15 @@ function DayEntries({ day, today }: { day: string; today: string }) {
     <section>
       <div className="mb-2 flex items-baseline justify-between px-0.5">
         <h2 className="text-xs font-medium text-muted first-letter:uppercase">
-          {day === today ? "Hoje" : formatLongDate(parseDayKey(day))}
+          {day === today ? m.history.today : formatLongDate(parseDayKey(day))}
         </h2>
-        <span className="text-xs text-subtle tabular-nums">{formatMl(total)} ml</span>
+        <span className="text-xs text-subtle tabular-nums">
+          {formatMl(total)} {m.ml}
+        </span>
       </div>
       {entries && entries.length === 0 && (
         <p className="rounded-xl border border-dashed border-line py-5 text-center text-xs text-subtle">
-          Nenhum registro neste dia.
+          {m.history.noEntries}
         </p>
       )}
       <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
@@ -181,6 +186,7 @@ function DayEntries({ day, today }: { day: string; today: string }) {
 
 function EntryRow({ entry, onEdit }: { entry: Entry; onEdit: () => void }) {
   const [confirm, setConfirm] = useState(false);
+  const m = useT();
 
   useEffect(() => {
     if (!confirm) return;
@@ -191,21 +197,23 @@ function EntryRow({ entry, onEdit }: { entry: Entry; onEdit: () => void }) {
   return (
     <li className="group flex h-11 items-center gap-3 px-3 text-sm">
       <span className="w-11 text-xs text-muted tabular-nums">{timeOfDay(entry.ts)}</span>
-      <span className="flex-1 font-medium tabular-nums">{formatMl(entry.amountMl)} ml</span>
+      <span className="flex-1 font-medium tabular-nums">
+        {formatMl(entry.amountMl)} {m.ml}
+      </span>
       {confirm ? (
         <button
           type="button"
           onClick={() => void aquaStore.getState().deleteEntry(entry)}
           className="rounded-md bg-danger/15 px-2 py-1 text-xs font-medium text-danger"
         >
-          Excluir?
+          {m.history.confirmDelete}
         </button>
       ) : (
         <div className="flex gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
-          <IconBtn label="Editar" onClick={onEdit}>
+          <IconBtn label={m.history.edit} onClick={onEdit}>
             <Pencil className="size-3.5" />
           </IconBtn>
-          <IconBtn label="Excluir" onClick={() => setConfirm(true)} danger>
+          <IconBtn label={m.history.delete} onClick={() => setConfirm(true)} danger>
             <Trash2 className="size-3.5" />
           </IconBtn>
         </div>
@@ -218,11 +226,12 @@ function EditRow({ entry, onDone }: { entry: Entry; onDone: () => void }) {
   const [amount, setAmount] = useState(String(entry.amountMl));
   const [time, setTime] = useState(timeOfDay(entry.ts));
   const [error, setError] = useState<string | null>(null);
+  const m = useT();
 
   async function save() {
     const parsed = parseAmount(amount);
     if (!parsed.ok) return setError(parsed.error);
-    if (!isValidTime(time)) return setError("Horário inválido.");
+    if (!isValidTime(time)) return setError(m.errors.invalidTime);
     if (await aquaStore.getState().updateEntry(entry, parsed.value, time)) onDone();
   }
 
@@ -240,7 +249,7 @@ function EditRow({ entry, onDone }: { entry: Entry; onDone: () => void }) {
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-          aria-label="Horário"
+          aria-label={m.history.time}
           className={`${inputClass} w-[92px] px-2 py-1.5 text-xs`}
         />
         <div className="relative flex-1">
@@ -253,15 +262,15 @@ function EditRow({ entry, onDone }: { entry: Entry; onDone: () => void }) {
               setAmount(e.target.value);
               setError(null);
             }}
-            aria-label="Quantidade em ml"
+            aria-label={m.history.amountAria}
             className={`${inputClass} py-1.5 pr-8 text-xs`}
           />
-          <span className="absolute top-1/2 right-2.5 -translate-y-1/2 text-[11px] text-subtle">ml</span>
+          <span className="absolute top-1/2 right-2.5 -translate-y-1/2 text-[11px] text-subtle">{m.ml}</span>
         </div>
-        <IconBtn label="Salvar" submit>
+        <IconBtn label={m.history.save} submit>
           <Check className="size-4 text-accent" />
         </IconBtn>
-        <IconBtn label="Cancelar" onClick={onDone}>
+        <IconBtn label={m.history.cancel} onClick={onDone}>
           <X className="size-4" />
         </IconBtn>
       </form>

@@ -1,4 +1,5 @@
 import { createStore } from "zustand/vanilla";
+import { resolveLocale, setLocale, t, type Locale } from "../i18n";
 import { errorMessage, type AquaApi } from "./api";
 import { addDays, dayKey } from "./date";
 import { formatMl } from "./format";
@@ -21,6 +22,8 @@ export interface Toast {
 
 export interface AquaState {
   status: "loading" | "ready" | "error";
+  /** Active UI language, resolved from `settings.language`. */
+  locale: Locale;
   loadError: string | null;
   settings: Settings;
   today: string;
@@ -59,6 +62,12 @@ export function createAquaStore(api: AquaApi, now: () => Date = () => new Date()
         revision: s.revision + 1,
       }));
 
+    const applyLanguage = (settings: Settings) => {
+      const locale = resolveLocale(settings.language);
+      setLocale(locale);
+      return locale;
+    };
+
     const fail = (err: unknown) => {
       get().showToast({ kind: "error", message: errorMessage(err) });
       return false as const;
@@ -72,8 +81,10 @@ export function createAquaStore(api: AquaApi, now: () => Date = () => new Date()
       ]);
       const map: Record<string, number> = {};
       for (const t of totals) map[t.day] = t.totalMl;
+      const locale = applyLanguage(settings);
       set((s) => ({
         settings,
+        locale,
         today,
         todayEntries,
         totals: map,
@@ -91,6 +102,7 @@ export function createAquaStore(api: AquaApi, now: () => Date = () => new Date()
 
     return {
       status: "loading",
+      locale: applyLanguage(DEFAULT_SETTINGS),
       loadError: null,
       settings: DEFAULT_SETTINGS,
       today: dayKey(now()),
@@ -144,7 +156,7 @@ export function createAquaStore(api: AquaApi, now: () => Date = () => new Date()
           }
           const goal = get().settings.goalMl;
           if (before < goal && todayTotal() >= goal) set((s) => ({ celebrate: s.celebrate + 1 }));
-          get().showToast({ kind: "info", message: `+${formatMl(entry.amountMl)} ml registrado`, undoId: entry.id });
+          get().showToast({ kind: "info", message: t().toast.added(formatMl(entry.amountMl)), undoId: entry.id });
           return true;
         } catch (err) {
           set({ lastAdd: null });
@@ -161,7 +173,7 @@ export function createAquaStore(api: AquaApi, now: () => Date = () => new Date()
         try {
           await removeEntry(last);
           set({ lastAdd: null });
-          get().showToast({ kind: "info", message: `Registro de ${formatMl(last.amountMl)} ml desfeito` });
+          get().showToast({ kind: "info", message: t().toast.undone(formatMl(last.amountMl)) });
           return true;
         } catch (err) {
           return fail(err);
@@ -199,7 +211,7 @@ export function createAquaStore(api: AquaApi, now: () => Date = () => new Date()
         if (!valid.ok) return valid.error;
         try {
           const saved = await api.saveSettings(valid.value);
-          set({ settings: saved });
+          set({ settings: saved, locale: applyLanguage(saved) });
           return null;
         } catch (err) {
           return errorMessage(err);

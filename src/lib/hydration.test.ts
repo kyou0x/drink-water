@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { setLocale } from "../i18n";
 import { addDays, dayKey, dayRange, parseDayKey } from "./date";
 import { formatMl, formatPercent } from "./format";
 import { computeProgress, goalStreak, lastEntry, summarizePeriod, sumEntries, totalsMap } from "./hydration";
+
+beforeAll(() => setLocale("pt-BR"));
 
 describe("computeProgress", () => {
   it("starts empty", () => {

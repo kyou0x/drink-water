@@ -201,7 +201,19 @@ describe("store: settings", () => {
     const t = setup();
     await t.store.getState().init();
     const s = t.store.getState().settings;
-    expect(await t.store.getState().saveSettings({ ...s, goalMl: -1 })).toMatch(/meta/i);
+    expect(await t.store.getState().saveSettings({ ...s, goalMl: -1 })).toMatch(/goal/i);
     expect(t.store.getState().settings.goalMl).toBe(4500);
+  });
+
+  it("switches the UI language when saved", async () => {
+    const t = setup();
+    await t.store.getState().init();
+    expect(t.store.getState().locale).toBe("en");
+    const s = t.store.getState().settings;
+    expect(await t.store.getState().saveSettings({ ...s, language: "pt-BR" })).toBeNull();
+    expect(t.store.getState().locale).toBe("pt-BR");
+    await t.store.getState().add(1250);
+    expect(t.store.getState().toast?.message).toBe("+1.250 ml registrado");
+    await t.store.getState().saveSettings({ ...s, language: "en" });
   });
 });

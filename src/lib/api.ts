@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { t, type Messages } from "../i18n";
 import type { DailyTotal, Entry, Settings } from "./types";
 
 export interface AquaApi {
@@ -22,8 +23,35 @@ export const tauriApi: AquaApi = {
   dailyTotals: (fromDay, toDay) => invoke("daily_totals", { fromDay, toDay }),
 };
 
+/** Stable error codes returned by the Rust commands (see `src-tauri/src/model.rs`). */
+const BACKEND_ERRORS: Record<string, keyof Messages["errors"]> = {
+  amount_too_small: "amountPositive",
+  amount_too_large: "invalidAmount",
+  invalid_time: "invalidTime",
+  invalid_date: "unexpected",
+  invalid_goal: "invalidAmount",
+  invalid_quick_amounts: "quickCount",
+  invalid_interval: "invalidInterval",
+  same_reminder_times: "sameTimes",
+  invalid_language: "invalidLanguage",
+  entry_not_found: "entryNotFound",
+  nonexistent_time: "nonexistentTime",
+  future_time: "futureTime",
+  db_unavailable: "dbUnavailable",
+  autostart_failed: "autostartFailed",
+};
+
 export function errorMessage(err: unknown): string {
-  if (typeof err === "string") return err;
+  const e = t().errors;
+  if (typeof err === "string") {
+    // Codes may carry details after a colon, e.g. "autostart_failed: access denied".
+    const key = BACKEND_ERRORS[err.split(":")[0] ?? ""];
+    if (key) {
+      const msg = e[key];
+      return typeof msg === "string" ? msg : e.unexpected;
+    }
+    return err;
+  }
   if (err instanceof Error) return err.message;
-  return "Erro inesperado.";
+  return e.unexpected;
 }
